@@ -1,0 +1,12 @@
+
+.vs/
+model/
+doc/
+output/
+SampleCode/
+SampleData/
+txt/
+Debug/
+Release/
+log.txt
+*.vcxproj.user

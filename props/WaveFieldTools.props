@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <WaveFieldToolsDir>D:\visual studio\source\imports\WFL\</WaveFieldToolsDir>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup>
+    <ClCompile />
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(WaveFieldToolsDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(WaveFieldToolsDir)lib</AdditionalLibraryDirectories>
+    </Link>
+    <PreBuildEvent />
+    <PreBuildEvent>
+      <Command>xcopy "$(WaveFieldToolsDir)bin\wfl3.dll" "$(OutDir)" /y /d /s
+xcopy "$(WaveFieldToolsDir)bin\psl.dll" "$(OutDir)" /y /d /s</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="WaveFieldToolsDir">
+      <Value>$(WaveFieldToolsDir)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

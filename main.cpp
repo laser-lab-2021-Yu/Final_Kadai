@@ -4,9 +4,11 @@ using namespace wfl;
 using namespace psl;
 
 static void Coding(WaveField& sub);
+static void LoadAndSave(const char* fname, WaveField& wf, const WFL_RECT& rect);
 
-static const double gRatio = 1.0 / 16.0;
-static const Point	gRefPos(0.0, -0.5e-3, -10e-3);
+static const double gRatio = 1.0 / 8.0;
+static const Point	gRefPos(0.0, -1.0e-3, -40e-3);
+static const Point	gEyePos(0, 0.0, 20e-3);
 
 int main()
 {
@@ -18,7 +20,7 @@ int main()
 
 	// 物体モデルファイルの読み込みと設定
 	IndexedFaceSet model;
-	model.LoadMqo("SampleData\\star8.mqo");
+	model.LoadMqo("model\\pondelion.mqo");
 	model.Localize();												//物体を一時的に原点に置く
 	model.SetWidth(objectSize);										//物体サイズ(幅)を設定
 	model += objectPos;												//物体位置を設定
@@ -40,8 +42,8 @@ int main()
 
 	// 結像再生の設定
 	ImagingViewer view;
-	Point eyePos(0, 0, 20e-3); eyePos *= gRatio; //視点位置
-	Point focusPos = objectPos + Point(0.0, 0.0, 0.0);
+	Point eyePos = gEyePos; eyePos *= gRatio; //視点位置
+	Point focusPos = objectPos;
 	view.SetOrigin(eyePos);
 	view.SetImagingDistance(24e-3);
 	view.SetPupilDiameter(6e-3);
@@ -74,7 +76,7 @@ int main()
 		// 物体モデルmodelからの光波を計算してフレームバッファに加算
 		sb.AddObjectFieldSb(frame, model, 1);						//スイッチバック法で物体光波計算
 
-		// デバッグ用にセーブ
+		// 物体光波分布
 		switch (RGBcounter)
 		{
 		case RED:	frame.SaveAsWf("output\\object-R.wf"); break;
@@ -125,12 +127,19 @@ int main()
 		image += view;
 	}
 
-	image.NormalizeXYZ(10.0);
+	WaveField red, green, blue;
+	WFL_RECT rect(0, view.GetNy() - 1, view.GetNx() - 1, view.GetNy() / 2);
+	// 物体光波のシミュレーション結果
+	LoadAndSave("output\\object-R", red, rect);
+	LoadAndSave("output\\object-G", green, rect);
+	LoadAndSave("output\\object-B", blue, rect);
+	// 干渉縞のシミュレーション結果
+	LoadAndSave("output\\fringe-R", red, rect);
+	LoadAndSave("output\\fringe-G", green, rect);
+	LoadAndSave("output\\fringe-B", blue, rect);
+	// 結像再生像のシミュレーション結果
+	image.NormalizeXYZ(10);
 	image.SaveAsBmpSRGB("output\\result.bmp");
-
-	WaveField test;
-	test.LoadWf("output\\object-R.wf");
-	test.SaveAsBmp("output\\test.bmp", Mode::AMPLITUDE);
 }
 
 void Coding(WaveField& fringe)
@@ -148,4 +157,14 @@ void Coding(WaveField& fringe)
 			fringe.SetPixel(ix, iy, Complex(amplitude, 0.0));
 		}
 	}
+}
+
+void LoadAndSave(const char* fname, WaveField& wf, const WFL_RECT& rect)
+{
+	char fullname[256];
+	sprintf_s(fullname, "%s.wf", fname);
+	wf.LoadWf(fullname);
+	//wf.SetWindow(rect);
+	sprintf_s(fullname, "%s.bmp", fname);
+	wf.SaveAsBmp(fullname, AMPLITUDE);
 }

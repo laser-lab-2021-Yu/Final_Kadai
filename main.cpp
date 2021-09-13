@@ -5,10 +5,11 @@ using namespace psl;
 
 static void Coding(WaveField& sub);
 static void LoadAndSave(const char* name, WaveField& wf, const WFL_RECT& rect);
+static void LoadAndSave(const char* name, WaveField& wf);
 
 static const double gRatio = 1.0 / 8.0;				 // ここでスケール倍率を決める
 static const Point	gRefPos(0.0, -50.0e-3, -200e-3); // ここで参照光の位置を決める
-static const Point	gEyePos(20e-3, 0.0, 200e-3);	 // ここで視点の位置を決める
+static const Point	gEyePos(0, 0, 200e-3);	 // ここで視点の位置を決める
 
 int main()
 {
@@ -21,7 +22,7 @@ int main()
 	// 物体モデルファイルの読み込みと設定
 	IndexedFaceSet model;
 	{
-		model.LoadMqo("model\\pondelion.mqo");
+		model.LoadMqo("model\\japan.mqo");
 		model.Localize();											//物体を一時的に原点に置く
 		model.SetWidth(objectSize);									//物体サイズ(幅)を設定
 		model += objectPos;											//物体位置を設定
@@ -127,13 +128,8 @@ int main()
 		ref.ConvToConjugate();
 		frame *= ref;
 
-		// RGB各色の結像再生像を作成
-		view.Clear();
-		view.View(frame, objectPos);
-		view.ImageRotation(2);
-
-		// RGB各色の結像再生像を加算
-		image += view;
+		// カラーの結像再生像を作成
+		view.SpectralView(frame, objectPos, image);
 	}
 
 	// 物体光波、干渉縞の画像化をする際の設定
@@ -141,13 +137,13 @@ int main()
 	WFL_RECT rect(-wDiv2, +hDiv2, +wDiv2, -hDiv2);
 
 	// 物体光のシミュレーション結果
-	LoadAndSave("output\\object-R", frame, rect);
-	LoadAndSave("output\\object-G", frame, rect);
-	LoadAndSave("output\\object-B", frame, rect);
+	LoadAndSave("output\\object-R", frame);
+	LoadAndSave("output\\object-G", frame);
+	LoadAndSave("output\\object-B", frame);
 	// 干渉縞のシミュレーション結果
-	LoadAndSave("output\\fringe-R", frame, rect);
-	LoadAndSave("output\\fringe-G", frame, rect);
-	LoadAndSave("output\\fringe-B", frame, rect);
+	LoadAndSave("output\\fringe-R", frame);
+	LoadAndSave("output\\fringe-G", frame);
+	LoadAndSave("output\\fringe-B", frame);
 	// 結像再生像のシミュレーション結果
 	image.NormalizeXYZ();
 	image.SaveAsBmpSRGB("output\\result.bmp");
@@ -178,7 +174,22 @@ void LoadAndSave(const char* name, WaveField& wf, const WFL_RECT& rect)
 	char fullname[256];
 	sprintf_s(fullname, "%s.wf", name);
 	wf.LoadWf(fullname);
-	wf.SetWindow(rect);
 	sprintf_s(fullname, "%s.bmp", name);
+	wf.SetWindow(rect);
+	wf.Normalize();
 	wf.SaveAsBmp(fullname, AMPLITUDE);
 }
+
+void LoadAndSave(const char* name, WaveField& wf)
+{
+	wf.Clear();
+	wf.SetWindowMax();
+
+	char fullname[256];
+	sprintf_s(fullname, "%s.wf", name);
+	wf.LoadWf(fullname);
+	sprintf_s(fullname, "%s.bmp", name);
+	wf.Normalize();
+	wf.SaveAsBmp(fullname, AMPLITUDE);
+}
+

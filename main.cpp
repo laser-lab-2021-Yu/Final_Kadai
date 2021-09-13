@@ -8,7 +8,7 @@ static void LoadWfAndSaveAsBmp(WaveField& wf, const WFL_RECT& rect, const char* 
 static void LoadWfAndSaveAsBmp(WaveField& wf, const char* name);
 static const char* Str(const char* format, ...);
 
-static const double gRatio = 1.0 / 8.0;				 // ここでスケール倍率を決める
+static const double gRatio = 1.0;				 // ここでスケール倍率を決める
 static const Point	gRefPos(0.0, -50.0e-3, -200e-3); // ここで参照光の位置を決める
 static const Point	gEyePos[5] =
 { 
@@ -30,9 +30,10 @@ int main()
 	// 物体モデルファイルの読み込みと設定
 	IndexedFaceSet model;
 	{
-		model.LoadMqo("model\\japan.mqo");
+		model.LoadMqo("model\\torii3.mqo");
 		model.Localize();											//物体を一時的に原点に置く
 		model.SetWidth(objectSize);									//物体サイズ(幅)を設定
+		model += objectPos;											//物体位置を設定
 		model.AutoNormalVector();									//グーローシェーディングのための準備
 	}
 
@@ -57,7 +58,7 @@ int main()
 		// 結像再生の設定
 		ImagingViewer view;
 		{
-			Point eyePos = gEyePos[0]; eyePos *= gRatio; //視点位置
+			Point eyePos = gEyePos[eyePosIdx]; eyePos *= gRatio; //視点位置
 			view.SetOrigin(eyePos);
 			view.SetImagingDistance(24e-3);
 			view.SetPupilDiameter(6e-3);
@@ -139,13 +140,8 @@ int main()
 			ref.ConvToConjugate();
 			frame *= ref;
 
-			// RGB各色の結像再生像を作成
-			view.Clear();
-			view.View(frame, objectPos);
-			view.ImageRotation(2);
-
-			// RGB各色の結像再生像を加算
-			image += view;
+			// カラーの結像再生像を作成
+			view.SpectralView(frame, objectPos, image);
 		}
 
 		// 物体光波、干渉縞の画像化をする際の設定

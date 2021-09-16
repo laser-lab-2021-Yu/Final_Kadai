@@ -3,6 +3,7 @@
 using namespace wfl;
 using namespace psl;
 
+<<<<<<< HEAD
 static void Coding(WaveField& sub);
 static void LoadAndSave(const char* name, WaveField& wf, const WFL_RECT& rect);
 static void LoadAndSave(const char* name, WaveField& wf);
@@ -10,19 +11,40 @@ static void LoadAndSave(const char* name, WaveField& wf);
 static const double gRatio = 1.0 / 8.0;				 // ここでスケール倍率を決める
 static const Point	gRefPos(0.0, -50.0e-3, -200e-3); // ここで参照光の位置を決める
 static const Point	gEyePos(0, 0, 200e-3);	 // ここで視点の位置を決める
+=======
+static void			Coding(WaveField& sub);
+static const char*	Str(const char* format, ...);
+
+static const double gScale = 1.0;				 // ここでスケール倍率を決める
+static const Point	gRefPos(0.0, -40.0e-3, -200e-3); // ここで参照光の位置を決める
+
+// ここで視点の位置を決める
+static const Point	gEyePos[5] =
+{ 
+	Point(0, 0, 200e-3),		// 正面
+	Point(0, 40e-3, 200e-3),	// 上
+	Point(0, -40e-3, 200e-3),	// 下
+	Point(-40e-3, 0, 200e-3),	// 左
+	Point(40e-3, 0, 200e-3)		// 右
+};
+>>>>>>> develop
 
 int main()
 {
 	Start();    wfl::SetNumThreads();								//最大限にプロセッサコアを用いる
 
 	// モデルの設定
-	double objectSize = 20e-3 * gRatio;								//物体の実サイズ
-	Point  objectPos(0.0, 0.0, -150e-3); objectPos *= gRatio;		//物体の中心位置
+	double objectSize = 20e-3 * gScale;								//物体の実サイズ
+	Point  objectPos(0.0, 0.0, -150e-3); objectPos *= gScale;		//物体の中心位置
 
 	// 物体モデルファイルの読み込みと設定
 	IndexedFaceSet model;
 	{
+<<<<<<< HEAD
 		model.LoadMqo("model\\japan.mqo");
+=======
+		model.LoadMqo("model\\torii3.mqo");
+>>>>>>> develop
 		model.Localize();											//物体を一時的に原点に置く
 		model.SetWidth(objectSize);									//物体サイズ(幅)を設定
 		model += objectPos;											//物体位置を設定
@@ -32,7 +54,7 @@ int main()
 	// フレームバッファの設定
 	double	  rgbLambda[] = { 630e-9, 540e-9, 460e-9 };				//フルカラー用に用いる波長(R, G, B)
 	double	  px = 0.8e-6,				py = 0.8e-6;				//サンプリング間隔
-	int		  nx = 64 * 1024 * gRatio,  ny = 64 * 1024 * gRatio;	//サンプリング数
+	int		  nx = 64 * 1024 * gScale,  ny = 64 * 1024 * gScale;	//サンプリング数
 	WaveField frame(nx, ny, px, py);
 
 	// シェーダーの設定
@@ -41,93 +63,92 @@ int main()
 
 	// 参照光の設定
 	WaveField ref(nx, ny, px, py);
-	Point	  refPos = gRefPos; refPos *= gRatio;
+	Point	  refPos = gRefPos; refPos *= gScale;
 
-	// 結像再生の設定
-	ImagingViewer view;
+	// 正面、上下左右の各視点を計算
+	int eyePosEnd = _countof(gEyePos);
+	for (int eyePosIdx = 0; eyePosIdx < eyePosEnd; ++eyePosIdx)
 	{
-		Point eyePos = gEyePos; eyePos *= gRatio; //視点位置
-		view.SetOrigin(eyePos);
-		view.SetImagingDistance(24e-3);
-		view.SetPupilDiameter(6e-3);
-		view.SetPx(px);
-		view.SetPy(py);
-		view.Init();
-	}
+		Printf("\n\n%d番目の視点の計算開始\n", eyePosIdx);
 
-	// 結像再生像の作成に用いる
-	ColorImage image(view.GetNx(), view.GetNy());
-
-	// 物体光波を瞳まで伝搬するシミュレーション
-	for (int RGBcounter = 1; RGBcounter <= 3; ++RGBcounter)
-	{
-		Printf("\n\n%d色目の計算開始\n", RGBcounter);
-
-		frame.Clear();
-		frame.SetWavelength(rgbLambda[RGBcounter - 1]);				//各色の波長設定
-		frame.SetOrigin(objectPos);									//フレームバッファの位置は物体モデルの中心
-
-		TfbLambertShading shading(gamma, light, (ColorMode)RGBcounter);//ランバートシェーダ
-
-		// SurfaceBuilderの設定
-		SurfaceBuilder sb(frame);									//帯域制限のため，サンプル数とサンプル間隔等を正しく設定
+		// 結像再生の設定
+		ImagingViewer view;
 		{
-			sb.SetBandLimitMethod(3);								//帯域制限をレベル3にする．
-			sb.SetCenter(Point(0, 0, 0));							//帯域制限のため，ホログラムの中心位置(0,0,0)を設定
-			sb.SetDiffractionRatio(0.9);							//回折率設定
-			sb.SetCullingRate(0.6);									//カリング率設定
-			sb.SetShader(shading);									//上で用意したシェーダーオブジェクトを組み込む
+			Point eyePos = gEyePos[eyePosIdx]; eyePos *= gScale;	//視点位置
+			view.SetOrigin(eyePos);
+			view.SetImagingDistance(24e-3);
+			view.SetPupilDiameter(6e-3);
+			view.SetPx(px);
+			view.SetPy(py);
+			view.Init();
 		}
 
-		// 物体モデルmodelからの光波を計算してフレームバッファに加算
-		sb.AddObjectFieldSb(frame, model, 1);						//スイッチバック法で物体光波計算
+		// 物体光波のシミュレーション画像の作成に用いる
+		ColorImage object(view.GetNx(), view.GetNy());
 
-		// 物体面の光波分布
-		switch (RGBcounter)
+		// 結像再生像の作成に用いる
+		ColorImage image(view.GetNx(), view.GetNy());
+
+		// 物体光波を瞳まで伝搬するシミュレーション
+		for (int RGBcounter = 1; RGBcounter <= 3; ++RGBcounter)
 		{
-		case RED:	frame.SaveAsWf("output\\object-R.wf"); break;
-		case GREEN: frame.SaveAsWf("output\\object-G.wf"); break;
-		case BLUE:	frame.SaveAsWf("output\\object-B.wf"); break;
+			Printf("\n\n%d色目の計算開始\n", RGBcounter);
+
+			frame.Clear();
+			frame.SetWavelength(rgbLambda[RGBcounter - 1]);				//各色の波長設定
+			frame.SetOrigin(objectPos);									//フレームバッファの位置は物体モデルの中心
+
+			TfbLambertShading shading(gamma, light, (ColorMode)RGBcounter);//ランバートシェーダ
+
+			// SurfaceBuilderの設定
+			SurfaceBuilder sb(frame);									//帯域制限のため，サンプル数とサンプル間隔等を正しく設定
+			{
+				sb.SetBandLimitMethod(3);								//帯域制限をレベル3にする．
+				sb.SetCenter(Point(0, 0, 0));							//帯域制限のため，ホログラムの中心位置(0,0,0)を設定
+				sb.SetDiffractionRatio(0.9);							//回折率設定
+				sb.SetCullingRate(0.6);									//カリング率設定
+				sb.SetShader(shading);									//上で用意したシェーダーオブジェクトを組み込む
+			}
+
+			// 物体モデルmodelからの光波を計算してフレームバッファに加算
+			sb.AddObjectFieldSb(frame, model, 1);						//スイッチバック法で物体光波計算
+
+			//-----------------------------------------
+			// (1) 物体光波シミュレーション再生像を計算
+			//-----------------------------------------
+			view.SpectralView(frame, objectPos, object);
+
+			// フレネルホログラム用の物体光波を得るためホログラムの位置(z = 0)まで伝搬計算する
+			frame.AsmProp(-frame.GetOrigin().GetZ());
+
+			// 球面波を参照光として設定
+			ref.Clear();
+			ref.SetWavelength(rgbLambda[RGBcounter - 1]);
+			ref.AddSphericalWave(refPos);
+
+			// 二値化干渉縞の作成
+			frame *= ref.ConvToConjugate();
+			Coding(frame);
+
+			//-------------------------------------------------------
+			// ここまでが干渉縞の記録
+			// ここからが干渉縞シミュレーション
+			//-------------------------------------------------------
+
+			// 干渉縞に再生照明光を当てる
+			frame *= ref.ConvToConjugate();
+
+			//---------------------------------------
+			// (2) 干渉縞シミュレーション再生像を計算
+			//---------------------------------------
+			view.SpectralView(frame, objectPos, image);
 		}
 
-		// フレネルホログラム用の物体光波を得るためホログラムの位置(z = 0)まで伝搬計算する
-		frame.AsmProp(-frame.GetOrigin().GetZ());
+		// 物体光波シミュレーション再生像を保存
+		object.NormalizeXYZ();
+		object.SaveAsBmpSRGB(Str("output\\object%d.bmp", eyePosIdx));
 
-		// ホログラム面(z = 0)で得られる物体光波の保存
-		switch (RGBcounter)
-		{
-		case RED:	frame.SaveAsWf("output\\frame-R.wf"); break;
-		case GREEN: frame.SaveAsWf("output\\frame-G.wf"); break;
-		case BLUE:	frame.SaveAsWf("output\\frame-B.wf"); break;
-		}
-
-		// 球面波を参照光として設定
-		ref.Clear();
-		ref.SetWavelength(rgbLambda[RGBcounter - 1]);
-		ref.AddSphericalWave(refPos);
-		ref.ConvToConjugate();
-
-		// 二値化干渉縞の作成
-		frame *= ref;
-		Coding(frame);
-
-		// 干渉縞の保存
-		switch (RGBcounter)
-		{
-		case RED:	frame.SaveAsWf("output\\fringe-R.wf"); break;
-		case GREEN: frame.SaveAsWf("output\\fringe-G.wf"); break;
-		case BLUE:	frame.SaveAsWf("output\\fringe-B.wf"); break;
-		}
-
-		//-------------------------------------------------------
-		// ここまでが干渉縞の記録
-		// ここからが結像再生のシミュレーション
-		//-------------------------------------------------------
-
-		// 干渉縞に再生照明光を当てる
-		ref.ConvToConjugate();
-		frame *= ref;
-
+<<<<<<< HEAD
 		// カラーの結像再生像を作成
 		view.SpectralView(frame, objectPos, image);
 	}
@@ -147,6 +168,12 @@ int main()
 	// 結像再生像のシミュレーション結果
 	image.NormalizeXYZ();
 	image.SaveAsBmpSRGB("output\\result.bmp");
+=======
+		// 干渉縞シミュレーション再生像を保存
+		image.NormalizeXYZ();
+		image.SaveAsBmpSRGB(Str("output\\view%d.bmp", eyePosIdx));
+	}
+>>>>>>> develop
 }
 
 void Coding(WaveField& fringe)
@@ -166,8 +193,10 @@ void Coding(WaveField& fringe)
 	}
 }
 
-void LoadAndSave(const char* name, WaveField& wf, const WFL_RECT& rect)
+#include <stdarg.h>
+const char* Str(const char* format, ...)
 {
+<<<<<<< HEAD
 	wf.Clear();
 	wf.SetWindowMax();
 
@@ -191,5 +220,14 @@ void LoadAndSave(const char* name, WaveField& wf)
 	sprintf_s(fullname, "%s.bmp", name);
 	wf.Normalize();
 	wf.SaveAsBmp(fullname, AMPLITUDE);
+=======
+	va_list args;
+	va_start(args, format);
+	static char fname[256];
+	vsprintf_s(fname, format, args);
+	printf("\n確認：%s\n", fname);
+	va_end(args);
+	return fname;
+>>>>>>> develop
 }
 

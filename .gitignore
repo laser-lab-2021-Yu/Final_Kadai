@@ -9,5 +9,6 @@ SampleData/
 txt/
 Debug/
 Release/
+exe/
 log.txt
 *.vcxproj.user

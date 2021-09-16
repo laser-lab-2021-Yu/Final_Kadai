@@ -14,9 +14,15 @@
       <AdditionalLibraryDirectories>$(WaveFieldToolsDir)lib</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent />
+    <PreBuildEvent />
+    <PostBuildEvent>
+      <Command>xcopy "$(WaveFieldToolsDir)bin\wfl3.dll" "$(ProjectDir)exe\$(IntDir)" /y /d /s
+xcopy "$(WaveFieldToolsDir)bin\psl.dll" "$(ProjectDir)exe\$(IntDir)" /y /d /s
+xcopy "$(TargetPath)" "$(ProjectDir)exe\$(IntDir)" /y /d /s</Command>
+    </PostBuildEvent>
     <PreBuildEvent>
-      <Command>xcopy "$(WaveFieldToolsDir)bin\wfl3.dll" "$(OutDir)" /y /d /s
-xcopy "$(WaveFieldToolsDir)bin\psl.dll" "$(OutDir)" /y /d /s</Command>
+      <Command>xcopy "$(WaveFieldToolsDir)bin\wfl3.dll" "$(ProjectDir)" /y /d /s
+xcopy "$(WaveFieldToolsDir)bin\psl.dll" "$(ProjectDir)" /y /d /s</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
